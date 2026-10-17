@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="Mailmx Cheker — pemeriksaan sesi autentikasi Google secara aman.">
+  <title>Mailmx Cheker</title>
+  <link rel="stylesheet" href="./style.css">
+  <style>
+      /* CSS Tambahan Khusus untuk Input Email (Menyesuaikan dengan style asli) */
+      .email-input-container { margin-top: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+      .email-input-container input { padding: 12px 15px; border-radius: 8px; border: 1px solid #334155; background-color: #1e293b; color: white; font-size: 16px; outline: none; width: 100%; }
+      .email-input-container input:focus { border-color: #3b82f6; }
+      .api-result { margin-top: 15px; padding: 15px; border-radius: 8px; font-size: 14px; display: none; }
+      .api-result.success { background-color: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; display: block; }
+      .api-result.error { background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; display: block; }
+      .api-result.warning { background-color: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #f59e0b; display: block; }
+      .api-loading { display: none; margin-top: 10px; font-size: 14px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <a class="promo-bar" href="https://mailmx.web.id/" target="_blank" rel="noopener noreferrer">
+    <span class="promo-tag">INFO</span>
+    <span>Daftar Mailmx platform stor Gmail</span>
+    <span class="promo-link">mailmx.web.id ↗</span>
+  </a>
+
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Mailmx Cheker beranda">
+        <span class="logo">✉</span><span>Mailmx <span class="gradient">Cheker</span></span>
+      </a>
+      <span class="secure"><span class="dot"></span> Pemeriksaan Cepat</span>
+    </header>
+
+    <section class="hero">
+      <p class="eyebrow">REAL-TIME EMAIL CHECKER</p>
+      <h1>Pemeriksaan status<br><span class="gradient">yang cepat & akurat.</span></h1>
+      <p class="subtitle">Masukkan alamat Gmail untuk mengecek apakah email tersebut masih aktif atau sudah dihapus/palsu secara langsung.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="loginTitle">
+      <div class="panel-icon">✦</div>
+      <h2 id="loginTitle">Cek Status Gmail</h2>
+      <p class="muted">Masukkan alamat email di bawah ini untuk memulai pemindaian.</p>
+      
+      <!-- Input Email Baru -->
+      <div class="email-input-container">
+          <input type="email" id="emailToCheck" placeholder="Contoh: namaemail@gmail.com" required>
+      </div>
+
+      <!-- Tombol Cek Email -->
+      <button id="checkEmailBtn" class="btn primary" type="button" onclick="verifyEmail()">
+        <span style="margin-right: 8px;">🔍</span> Cek Status Email
+      </button>
+
+      <!-- Status Loading -->
+      <p id="apiLoading" class="api-loading">Memeriksa ke server Google...</p>
+
+      <!-- Hasil Pengecekan API -->
+      <div id="apiResult" class="api-result"></div>
+
+    </section>
+
+    <section class="info-grid">
+      <article class="info-card"><span class="info-icon">🔐</span><h3>Aman & Privasi</h3><p>Pengecekan dilakukan tanpa meminta password. Kami hanya mengecek ketersediaan alamat.</p></article>
+      <article class="info-card"><span class="info-icon">⚡</span><h3>Kecepatan Real-time</h3><p>Proses ping SMTP dilakukan langsung ke server email untuk akurasi tinggi.</p></article>
+      <article class="info-card"><span class="info-icon">ℹ️</span><h3>Status yang jelas</h3><p>Anda akan tahu seketika apakah email tersebut aktif, penuh, atau sudah tidak terdaftar.</p></article>
+    </section>
+    <footer>Mailmx Cheker · Real-time Validation API · <a href="https://mailmx.web.id/" target="_blank" rel="noopener noreferrer">Daftar Mailmx</a></footer>
+  </main>
+
+  <div id="welcomeModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <section class="modal">
+      <button id="closeModal" class="modal-close" type="button" aria-label="Tutup">×</button>
+      <div class="modal-mark">📣</div>
+      <p class="eyebrow">INFO MAILMX</p>
+      <h2 id="welcomeTitle">Gabung saluran WhatsApp Mailmx</h2>
+      <p class="muted">Ikuti saluran resmi untuk mendapatkan informasi dan pembaruan seputar platform Mailmx.</p>
+      <a class="btn primary cta-link" href="https://whatsapp.com/channel/0029VbBfreU3QxS0kwO6jl36" target="_blank" rel="noopener noreferrer">Gabung Saluran WhatsApp ↗</a>
+      <button id="laterBtn" class="btn ghost" type="button">Lanjut ke website</button>
+      <p class="modal-footnote">Info promosi ini ditampilkan saat pertama kali membuka website pada browser ini.</p>
+    </section>
+  </div>
+
+  <!-- SCRIPT MESIN PENGECEK EMAIL -->
+  <script>
+      const API_KEY = "471f366e99ce405abdd06cdbd1db2149"; 
+
+      async function verifyEmail() {
+          const emailInput = document.getElementById("emailToCheck").value.trim();
+          const resultBox = document.getElementById("apiResult");
+          const loadingText = document.getElementById("apiLoading");
+          const checkBtn = document.getElementById("checkEmailBtn");
+
+          if (emailInput === "") {
+              alert("Harap masukkan alamat email terlebih dahulu!");
+              return;
+          }
+
+          // Tampilan loading
+          resultBox.className = "api-result";
+          resultBox.innerHTML = "";
+          loadingText.style.display = "block";
+          checkBtn.disabled = true;
+          checkBtn.style.opacity = "0.7";
+
+          const url = `https://emailvalidation.abstractapi.com/v1/?api_key=${API_KEY}&email=${emailInput}`;
+
+          try {
+              const response = await fetch(url);
+              const data = await response.json();
+
+              loadingText.style.display = "none";
+
+              if (data.error) {
+                  resultBox.className = "api-result error";
+                  resultBox.innerHTML = `<strong>Error Sistem:</strong> ${data.error.message}`;
+              } else if (data.deliverability === "DELIVERABLE") {
+                  resultBox.className = "api-result success";
+                  resultBox.innerHTML = `<strong>✅ Email Aktif!</strong><br>Alamat <b>${data.email}</b> terdaftar dan valid.`;
+              } else if (data.deliverability === "UNDELIVERABLE") {
+                  resultBox.className = "api-result error";
+                  resultBox.innerHTML = `<strong>❌ Email Tidak Ditemukan!</strong><br>Alamat <b>${data.email}</b> tidak aktif/palsu.`;
+              } else {
+                  resultBox.className = "api-result warning";
+                  resultBox.innerHTML = `<strong>⚠️ Status Berisiko!</strong><br>Alamat <b>${data.email}</b> mungkin valid, tetapi server penuh/menolak pengecekan otomatis.`;
+              }
+          } catch (error) {
+              loadingText.style.display = "none";
+              resultBox.className = "api-result error";
+              resultBox.innerHTML = `<strong>Koneksi Gagal!</strong><br>Gagal terhubung ke server API. Periksa internet Anda.`;
+          }
+
+          checkBtn.disabled = false;
+          checkBtn.style.opacity = "1";
+      }
+
+      // SCRIPT UNTUK MODAL PROMOSI (Bawaan asli Anda)
+      document.addEventListener("DOMContentLoaded", () => {
+          const modal = document.getElementById("welcomeModal");
+          const closeBtn = document.getElementById("closeModal");
+          const laterBtn = document.getElementById("laterBtn");
+
+          if (!localStorage.getItem("promoSeen")) {
+              modal.classList.remove("hidden");
+          }
+
+          function closeModal() {
+              modal.classList.add("hidden");
+              localStorage.setItem("promoSeen", "true");
+          }
+
+          closeBtn.addEventListener("click", closeModal);
+          laterBtn.addEventListener("click", closeModal);
+      });
+  </script>
+</body>
+</html>
